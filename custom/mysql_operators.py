@@ -10,10 +10,22 @@ from airflow.hooks.mysql_hook import MySqlHook
 import logging
 from airflow.operators.mysql_operator import MySqlOperator as BaseMySqlOperator
 from airflow.hooks.mysql_hook import MySqlHook
+from airflow.utils.decorators import apply_defaults
 
 class ReturningMySqlOperator(BaseMySqlOperator):
-    def execute(self, context):
-        self.log.info('Executing: %s', self.sql)
-        hook = MySqlHook(mysql_conn_id=self.mysql_conn_id, schema=self.database)
-        return hook.get_first(self.sql)
-        
+
+	@apply_defaults
+	def __init__(
+		self, 
+    	params: dict, 
+    	**kwargs) -> None:
+		super().__init__(**kwargs)
+		self.params = params
+
+	def execute(self, context):
+	    self.log.info('Executing: %s', self.sql)
+	    hook = MySqlHook(mysql_conn_id=self.mysql_conn_id, schema=self.database)
+	    result = hook.get_first(self.sql)
+	    self.params['r'] = result
+	    return result
+    
